@@ -88,6 +88,8 @@ block for f'' with a *convexity row*.
 
 #param-table((
   [`factors`], [`array`], [`()`], [Factor rows (see factor keys below).],
+  [`signs`], [`array`], [`()`], [Direct signs for the summary row, without factor rows. Mutually exclusive with `factors`. Same values as a factor's `signs`.],
+  [`zeros`], [`array`], [`()`], [Zeros attached to top-level `signs` / `second-signs`. Same format as a factor's `zeros`, including the number shorthand.],
   [`summary-label`], [`content`, `none`], [`none`], [Label for the f' summary row.],
   [`variation`], [`bool`], [`false`], [Show variation row with diagonal arrows.],
   [`variation-label`], [`content`, `none`], [`none`], [Label for the variation row.],
@@ -101,8 +103,9 @@ block for f'' with a *convexity row*.
   [`row-height`], [`length`], [`0.9cm`], [Height of sign/factor rows.],
   [`var-row-height`], [`auto`, `length`], [`auto`], [Height of variation and convexity rows. `auto` grows to fit the tallest label.],
   [`second-factors`], [`array`], [`()`], [Factor rows for f''. Same structure as `factors`.],
+  [`second-signs`], [`array`], [`()`], [Direct signs for the f'' block, without factor rows. Mutually exclusive with `second-factors`. Zeros come from top-level `zeros`.],
   [`second-summary-label`], [`content`, `none`], [`none`], [Label for the f'' summary row.],
-  [`convexity`], [`bool`], [`false`], [Show convexity row with ∪ (f''>0) and ∩ (f'' < 0).],
+  [`convexity`], [`bool`, `string`], [`false`], [Convexity row. `true`/`"symbol"` → ∪/∩; `"text"` → "convexe"/"concave"; `"both"` → symbol above the word.],
   [`convexity-label`], [`content`, `none`], [`none`], [Label for the convexity row.],
   [`hd-fill`], [`color`], [`rgb("#cfe2f3")`], [Fill color when `hd-style: "fill"`.],
   [`hd-style`], [`string`], [`"hatch"`], [HD band style: `"hatch"`, `"fill"`, or `"blank"`.],
@@ -112,27 +115,120 @@ block for f'' with a *convexity row*.
 
 === Factor dictionary keys
 
-Each entry in `factors` or `second-factors` is a dictionary:
+Each entry in `factors` or `second-factors` is a dictionary. *Exactly one of `signs` or `fn`
+is required*; every other key is optional:
 
 #param-table((
-  [`expr`], [`content`], [—], [Math expression for the row label (e.g. `$x - 1$`).],
-  [`zeros`], [`array`], [`()`], [Zero declarations (see zero keys below).],
-  [`signs`], [`array`], [—], [Sign per interval: `"+"`, `"-"`, `""` (blank), `"HD"`. Takes precedence over `fn`.],
-  [`fn`], [`function`], [—], [`x => number` for auto-sign inference. Return `none` to mark HD. Used when `signs` is absent.],
-  [`interdit`], [`bool`], [`false`], [All zeros of this factor are forbidden values of f (shorthand for `pole: true` on each zero).],
+  [`expr`], [`content`], [—], [_Optional._ Math expression for the row label (e.g. `$x - 1$`).],
+  [`zeros`], [`array`], [`()`], [_Optional._ Zero declarations (see zero keys below).],
+  [`signs`], [`array`], [—], [*Required unless `fn` is given.* Sign per interval: `"+"`, `"-"`, `""` (blank), `"HD"`. Takes precedence over `fn`.],
+  [`fn`], [`function`], [—], [*Required unless `signs` is given.* `x => number` for auto-sign inference. Return `none` to mark HD.],
+  [`interdit`], [`bool`], [`false`], [_Optional._ All zeros of this factor are forbidden values of f (shorthand for `pole: true` on each zero).],
 ))
 
 === Zero dictionary keys
 
-Each entry in `zeros`:
+Each entry in a `zeros` array is either a *plain number* — shorthand for
+`(value: $n$, approx: n)`, convenient when the zero needs no special display —
+or a dictionary with the following keys:
 
 #param-table((
-  [`value`], [`content`], [—], [Displayed label (e.g. `$1$`, `$sqrt(2)$`).],
-  [`approx`], [`float`], [—], [Numeric approximation, used for sorting and test-point computation.],
-  [`pole`], [`bool`], [`false`], [Valeur interdite: double bar ‖ in summary/variation/convexity rows; breaks arrows.],
-  [`mark`], [`content`, `"bar"`, `"hd"`], [—], [Custom marker in factor and summary rows. `"bar"` draws a double bar; `"hd"` continues the HD hatch through the point.],
-  [`summary-mark`], [`content`, `"bar"`, `"hd"`], [—], [Custom marker in the summary row only.],
+  [`value`], [`content`], [—], [*Required.* Displayed label (e.g. `$1$`, `$sqrt(2)$`).],
+  [`approx`], [`float`], [—], [*Required.* Numeric approximation, used for sorting, merging shared zeros, and test-point computation.],
+  [`pole`], [`bool`], [`false`], [_Optional._ Valeur interdite: double bar ‖ in summary/variation/convexity rows; breaks arrows.],
+  [`mark`], [`content`, `"bar"`, `"hd"`], [—], [_Optional._ Custom marker in factor and summary rows. `"bar"` draws a double bar; `"hd"` continues the HD hatch through the point.],
+  [`summary-mark`], [`content`, `"bar"`, `"hd"`], [—], [_Optional._ Custom marker in the summary row only.],
 ))
+
+The number shorthand and the dictionary form can be mixed freely:
+
+```typst
+zeros: (-2, (value: $sqrt(2)$, approx: calc.sqrt(2)), 3)
+```
+
+== Direct signs — tables without factors
+
+When the factorisation is not the point of the exercise, give the signs of the function
+directly with the top-level `signs` and `zeros` parameters instead of `factors`
+(the two are mutually exclusive):
+
+#example[
+```typst
+#sign-table(
+  signs: ("+", "-", "+"),
+  zeros: (-2, 1),
+  summary-label: $f(x)$,
+)
+```
+#sign-table(
+  signs: ("+", "-", "+"),
+  zeros: (-2, 1),
+  summary-label: $f(x)$,
+)
+]
+
+The same mechanism gives a *variation table alone*, with no sign row at all — leave
+`summary-label` at `none` and the signs only steer the arrows:
+
+#example[
+```typst
+#sign-table(
+  signs: ("-", "+"),
+  zeros: (2,),
+  variation: true,
+  variation-label: $f(x)$,
+  start-value: $+oo$,
+  end-value: $+oo$,
+  variation-values: ((at: 2, label: $-3$),),
+)
+```
+#sign-table(
+  signs: ("-", "+"),
+  zeros: (2,),
+  variation: true,
+  variation-label: $f(x)$,
+  start-value: $+oo$,
+  end-value: $+oo$,
+  variation-values: ((at: 2, label: $-3$),),
+)
+]
+
+Per-zero options work as usual — mix the number shorthand with dictionaries to mark a pole:
+
+```typst
+signs: ("+", "-", "+"),
+zeros: (-1, (value: $2$, approx: 2, pole: true)),
+```
+
+Symmetrically, `second-signs` drives the f'' block (and hence the convexity row) without
+`second-factors`; its zeros also come from the top-level `zeros` parameter. Note that a
+sign table *without* a variation table has always been the default — just leave
+`variation: false`.
+
+== Convexity display modes
+
+The `convexity` parameter accepts, besides `false`, three display modes: `"symbol"`
+(equivalent to `true`) for the classic ∪/∩, `"text"` for the words "convexe"/"concave",
+and `"both"` for the symbol stacked above the word:
+
+#example[
+```typst
+#sign-table(
+  second-signs: ("-", "+"),
+  zeros: (0,),
+  second-summary-label: $f''(x)$,
+  convexity: "both",
+  convexity-label: $f(x)$,
+)
+```
+#sign-table(
+  second-signs: ("-", "+"),
+  zeros: (0,),
+  second-summary-label: $f''(x)$,
+  convexity: "both",
+  convexity-label: $f(x)$,
+)
+]
 
 == Variation values
 

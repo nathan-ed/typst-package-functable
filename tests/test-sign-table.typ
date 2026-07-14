@@ -755,3 +755,107 @@
   convexity: true,
   convexity-label: $f(x)$,
 )
+
+// ════ 0.1.0 additions: direct signs, zero shorthand, convexity modes ═════════
+
+// ─── 47. Top-level signs — sign table without factors ────────────────────────
+#section[47. Direct signs: sign table for f without any factor rows]
+
+#sign-table(
+  signs: ("+", "-", "+"),
+  zeros: (-2, 1),
+  summary-label: $f(x)$,
+)
+
+// ─── 48. Top-level signs — variation-only table ───────────────────────────────
+#section[48. Direct signs: variation table alone (no sign rows at all)]
+
+#sign-table(
+  signs: ("-", "+"),
+  zeros: (2,),
+  variation: true,
+  variation-label: $f(x)$,
+  start-value: $+oo$,
+  end-value: $+oo$,
+  variation-values: ((at: 2, label: $-3$),),
+)
+
+// ─── 49. Top-level signs with pole ────────────────────────────────────────────
+#section[49. Direct signs with a pole (dictionary + number shorthand mixed)]
+
+#sign-table(
+  signs: ("+", "-", "+"),
+  zeros: (-1, (value: $2$, approx: 2, pole: true)),
+  summary-label: $f(x)$,
+  variation: true,
+  variation-label: $f(x)$,
+)
+
+// ─── 50. Zero number shorthand in factors ─────────────────────────────────────
+#section[50. Number shorthand in factor zeros]
+
+#sign-table(
+  factors: (
+    (expr: $x - 1$, zeros: (1,), signs: ("-", "+")),
+    (expr: $x + 2$, zeros: (-2,), signs: ("-", "+")),
+  ),
+  summary-label: $f'(x)$,
+  variation: true,
+  variation-label: $f(x)$,
+)
+
+// ─── 51. convexity: "text" ────────────────────────────────────────────────────
+#section[51. Convexity row in text mode ("convexe" / "concave")]
+
+#sign-table(
+  second-factors: (
+    (expr: $6x$, zeros: (0,), signs: ("-", "+")),
+  ),
+  second-summary-label: $f''(x)$,
+  convexity: "text",
+  convexity-label: $f(x)$,
+)
+
+// ─── 52. convexity: "both" ────────────────────────────────────────────────────
+#section[52. Convexity row in both mode (symbol + word)]
+
+#sign-table(
+  second-factors: (
+    (expr: $6x$, zeros: (0,), signs: ("-", "+")),
+  ),
+  second-summary-label: $f''(x)$,
+  convexity: "both",
+  convexity-label: $f(x)$,
+)
+
+// ─── 53. second-signs — convexity-only table ──────────────────────────────────
+#section[53. Direct second-signs: convexity row without f'' factor rows]
+
+#sign-table(
+  second-signs: ("-", "+"),
+  zeros: (0,),
+  second-summary-label: $f''(x)$,
+  convexity: true,
+  convexity-label: $f(x)$,
+)
+
+// ─── 54. Full analysis: f' summary no longer marks f''-only zeros ────────────
+#section[54. f' summary row skips the f''-only zero at 0 (regression)]
+
+#sign-table(
+  factors: (
+    (expr: $3x^2 - 3$, zeros: (-1, 1), signs: ("+", "-", "+")),
+  ),
+  summary-label: $f'(x)$,
+  variation: true,
+  variation-label: $f(x)$,
+  start-value: $+oo$,
+  end-value: $+oo$,
+  variation-values: ((at: -1, label: $2$), (at: 1, label: $-2$)),
+  second-factors: (
+    (expr: $6x$, zeros: (0,), signs: ("-", "+")),
+  ),
+  second-summary-label: $f''(x)$,
+  convexity: "both",
+  convexity-label: $f(x)$,
+)
