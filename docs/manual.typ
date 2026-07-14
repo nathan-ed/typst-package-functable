@@ -1,5 +1,7 @@
 // functable manual
-#import "@preview/functable:0.1.0": sign-table, fun-table
+#import "@preview/functable:0.1.0": sign-table as _sign-table, fun-table
+// All examples render inside a grey #f8f8f8 block — set background once here.
+#let sign-table = _sign-table.with(background: rgb("#f8f8f8"))
 
 #set document(title: "functable manual", author: "Nathan Scheinmann")
 #set page(paper: "a4", margin: (x: 2.5cm, y: 2.5cm))
@@ -105,6 +107,7 @@ block for f'' with a *convexity row*.
   [`hd-fill`], [`color`], [`rgb("#cfe2f3")`], [Fill color when `hd-style: "fill"`.],
   [`hd-style`], [`string`], [`"hatch"`], [HD band style: `"hatch"`, `"fill"`, or `"blank"`.],
   [`show-facteurs`], [`bool`], [`true`], [Show rotated "facteur(s)" strip at the left spanning the factor rows.],
+  [`background`], [`color`], [`white`], [Background colour for label knockout rectangles. Set to match your page or container fill.],
 ))
 
 === Factor dictionary keys
@@ -308,6 +311,21 @@ there is only one factor row or when the factors are implied by context:
   show-facteurs: false,
 )
 ]
+
+== Coloured background
+
+Zero labels, bound labels, and variation values use a knockout rectangle to visually break
+the table grid lines. By default this rectangle is `white`. When the table sits on a
+non-white background — inside a coloured box or on a tinted page — set `background` to
+match so the knockout is invisible:
+
+```typst
+// Set once to apply to all tables in a document or scope:
+#let sign-table = sign-table.with(background: luma(230))
+```
+
+All examples in this manual are rendered inside a light-grey `#f8f8f8` block. The manual
+sets `background` globally at the top so the labels always look correct.
 
 == Domain boundary (range not in domain)
 
