@@ -162,7 +162,7 @@ expression does not exist. The interval renders as a hatched band:
   summary-label: $f'(x)$,
   variation: true,
   variation-label: $f(x)$,
-  bounds: (left: $0$, right: $+oo$),
+  bounds: (left: none, right: $+oo$),
   start-value: $0$, start-pos: "bottom",
 )
 ```
@@ -177,7 +177,7 @@ expression does not exist. The interval renders as a hatched band:
   summary-label: $f'(x)$,
   variation: true,
   variation-label: $f(x)$,
-  bounds: (left: $0$, right: $+oo$),
+  bounds: (left: none, right: $+oo$),
   start-value: $0$, start-pos: "bottom",
 )
 ]
@@ -313,7 +313,8 @@ there is only one factor row or when the factors are implied by context:
 
 Use `mark: "hd"` on a zero that lies at a domain boundary (not an asymptote):
 the hatch continues *through* the zero point, and the variation arrow starts at that edge.
-Combine with a restricted `bounds` to show the function's actual domain:
+The zero at the boundary already appears as a column header — do *not* also set the left
+bound to the same value (that would create a duplicate label). Use `bounds: (left: none, ...)` instead:
 
 #example[
 ```typst
@@ -329,7 +330,7 @@ Combine with a restricted `bounds` to show the function's actual domain:
   summary-label: $f'(x)$,
   variation: true,
   variation-label: $f(x)$,
-  bounds: (left: $0$, right: $+oo$),
+  bounds: (left: none, right: $+oo$),
   start-value: $0$,
   start-pos: "bottom",
 )
@@ -345,24 +346,27 @@ Combine with a restricted `bounds` to show the function's actual domain:
   summary-label: $f'(x)$,
   variation: true,
   variation-label: $f(x)$,
-  bounds: (left: $0$, right: $+oo$),
+  bounds: (left: none, right: $+oo$),
   start-value: $0$,
   start-pos: "bottom",
 )
 ]
 
-A function undefined on an entire interval (e.g. $ln(x^2 - 4)$ undefined for $x in ]-2, 2[$)
-uses `"HD"` in `signs` (or `none` from `fn`) for those intervals:
+A function undefined on an entire interval (e.g. $f(x) = ln(x^2 - 4)$, undefined for $x in ]-2, 2[$)
+requires a domain check. Use `fn` for each factor and return `none` outside the domain.
+Zeros that fall inside the excluded zone (here x=0 for 2x) should not be listed in `zeros`
+since they do not lie in the domain of f:
 
 #example[
 ```typst
-// f'(x) = 2x/(x²-4), undefined on ]-2, 2[
+// f(x) = ln(x²-4), domain: |x| > 2. f'(x) = 2x/(x²-4).
+// x=0 is NOT listed as a zero: it is outside the domain of f.
 #sign-table(
   factors: (
     (
       expr: $2x$,
-      zeros: ((value: $0$, approx: 0),),
-      signs: ("HD", "+", "+"),
+      zeros: (),
+      fn: x => if x * x <= 4 { none } else { 2 * x },
     ),
     (
       expr: $x^2 - 4$,
@@ -370,7 +374,7 @@ uses `"HD"` in `signs` (or `none` from `fn`) for those intervals:
         (value: $-2$, approx: -2, pole: true),
         (value: $2$,  approx:  2, pole: true),
       ),
-      signs: ("+", "HD", "+"),
+      fn: x => if x * x <= 4 { none } else { x * x - 4 },
     ),
   ),
   summary-label: $f'(x)$,
@@ -382,8 +386,8 @@ uses `"HD"` in `signs` (or `none` from `fn`) for those intervals:
   factors: (
     (
       expr: $2x$,
-      zeros: ((value: $0$, approx: 0),),
-      signs: ("HD", "+", "+"),
+      zeros: (),
+      fn: x => if x * x <= 4 { none } else { 2 * x },
     ),
     (
       expr: $x^2 - 4$,
@@ -391,7 +395,7 @@ uses `"HD"` in `signs` (or `none` from `fn`) for those intervals:
         (value: $-2$, approx: -2, pole: true),
         (value: $2$,  approx:  2, pole: true),
       ),
-      signs: ("+", "HD", "+"),
+      fn: x => if x * x <= 4 { none } else { x * x - 4 },
     ),
   ),
   summary-label: $f'(x)$,

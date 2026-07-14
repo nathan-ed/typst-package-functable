@@ -191,7 +191,7 @@
   summary-label: $f'(x)$,
   variation: true,
   variation-label: $f(x)$,
-  bounds: (left: $0$, right: $+oo$),
+  bounds: (left: none, right: $+oo$),
   start-value: $0$,
   start-pos: "bottom",
 )
@@ -452,7 +452,7 @@
   second-summary-label: $f''(x)$,
   convexity: true,
   convexity-label: $f(x)$,
-  bounds: (left: $0$, right: $+oo$),
+  bounds: (left: none, right: $+oo$),
 )
 
 // ─── 29. No zeros ─────────────────────────────────────────────────────────────
@@ -692,7 +692,7 @@
   summary-label: $f'(x)$,
   variation: true,
   variation-label: $f(x)$,
-  bounds: (left: $1$, right: $+oo$),
+  bounds: (left: none, right: $+oo$),
   start-value: $f(1)$,
 )
 
