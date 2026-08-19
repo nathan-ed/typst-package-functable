@@ -1,5 +1,5 @@
 // Gallery: sign-table with fn — fully automatic sign/variation table
-#import "@preview/functable:0.1.0": sign-table
+#import "@preview/functable:0.2.0": sign-table
 
 #set page(width: 14cm, height: auto, margin: 0.8cm)
 #set text(size: 10pt)

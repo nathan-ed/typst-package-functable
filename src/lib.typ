@@ -73,8 +73,21 @@
 ///   ∪ (f''>0) and ∩ (f''<0) symbols; `"text"` writes "convexe"/"concave";
 ///   `"both"` stacks the symbol above the word. `false` hides the row.
 /// - convexity-label (content, none): Label for the convexity row.
+/// - second-variation (bool): Draw the second block's bottom row as a variation
+///   row (arrows) instead of a convexity row. With the blocks labelled f''(x),
+///   f', f'(x), f this gives the full second-derivative reading: the sign of
+///   f'' gives the variations of f', whose sign gives the variations of f.
+///   Mutually exclusive with `convexity`.
+/// - second-variation-label (content, none): Label for that row.
+/// - second-variation-values (array): Values to overlay on it, like `variation-values`.
+/// - x-label (content): Label for the x row (default $x$), so a table can be in
+///   t, in theta, or in whatever the problem is written in.
 /// - hd-fill (color): Fill color for HD bands when `hd-style: "fill"` (default light blue).
 /// - hd-style (string): HD band rendering — `"hatch"` (diagonal lines), `"fill"` (solid tint), or `"blank"` (no fill).
+/// - zero-line (string): the vertical rule at each zero, through the sign rows —
+///   `"dotted"` (default), `"solid"`, or `"none"`. A solid rule reads like the
+///   double bar of a valeur interdite in a factor row that has no zero there,
+///   which is why the default is dotted.
 /// - show-facteurs (bool): Show the rotated "facteur(s)" strip at the far left spanning the factor rows.
 /// - background (color): Background color used for label knockout rectangles. Set to match your page or container fill (default `white`).
 #let sign-table(
@@ -99,10 +112,15 @@
   second-summary-label: none,
   convexity: false,
   convexity-label: none,
+  second-variation: false,
+  second-variation-label: none,
+  second-variation-values: (),
   hd-fill: rgb("#cfe2f3"),
   hd-style: "hatch",
+  zero-line: "dotted",
   show-facteurs: true,
   background: white,
+  x-label: $x$,
 ) = {
   assert(
     factors.len() == 0 or signs.len() == 0,
@@ -118,6 +136,14 @@
     message: "sign-table: `convexity` must be a bool, \"symbol\", \"text\" or \"both\"",
   )
   let convexity = convexity-mode != none
+  assert(
+    not (second-variation and convexity-mode != none),
+    message: "sign-table: the second block's bottom row is either `convexity` or `second-variation`, not both",
+  )
+  assert(
+    zero-line in ("dotted", "solid", "none"),
+    message: "sign-table: `zero-line` must be \"dotted\", \"solid\" or \"none\", got " + repr(zero-line),
+  )
 
   // Numbers in a `zeros` array are shorthand for (value: $n$, approx: n).
   let normalize-zero(z) = if type(z) == int or type(z) == float {
@@ -348,6 +374,18 @@
       }
     }
   }
+  let second-zero-values = ()
+  for (i, zero) in all-zeros.enumerate() {
+    for v in second-variation-values {
+      if calc.abs(zero.approx - v.at) < 1e-6 {
+        let pos = v.at("pos", default: "auto")
+        if pos == "auto" { pos = auto-interior-pos(i) }
+        let b = value-box(v.label)
+        second-zero-values.push((i: i, pos: pos, body: b, size: measure(b)))
+      }
+    }
+  }
+
   let start-val = if start-value != none {
     let pos = if start-pos == "auto" {
       let s = none
@@ -397,7 +435,7 @@
     header-height + num-rows * row-height
     + (if variation { var-row-height + double-line-gap } else { 0cm })
     + (if has-second-block { second-block-rows * row-height + double-line-gap } else { 0cm })
-    + (if convexity { var-row-height + double-line-gap } else { 0cm })
+    + (if convexity or second-variation { var-row-height + double-line-gap } else { 0cm })
   )
 
   let dotted-stroke = (thickness: 0.5pt, dash: "densely-dotted")
@@ -496,17 +534,22 @@
       let y2 = y-sign-bottom + (if variation { var-row-height + double-line-gap } else { 0cm })
       line-segments.push((y2, y2 + double-line-gap + second-block-rows * row-height))
     }
-    for i in range(num-zeros) {
-      for (y-a, y-b) in line-segments {
-        place(top + left, dx: x-at-zero(i), dy: y-a,
-          line(start: (0pt, 0pt), end: (0pt, y-b - y-a), stroke: 0.5pt)
-        )
+    let zero-line-stroke = if zero-line == "solid" { 0.5pt }
+      else if zero-line == "dotted" { dotted-stroke }
+      else { none }
+    if zero-line-stroke != none {
+      for i in range(num-zeros) {
+        for (y-a, y-b) in line-segments {
+          place(top + left, dx: x-at-zero(i), dy: y-a,
+            line(start: (0pt, 0pt), end: (0pt, y-b - y-a), stroke: zero-line-stroke)
+          )
+        }
       }
     }
 
     // Header row
     place(top + left, dx: lbl-w / 2, dy: header-height / 2,
-      box(width: 0pt, height: 0pt, align(center + horizon)[*$x$*])
+      box(width: 0pt, height: 0pt, align(center + horizon)[*#x-label*])
     )
     if left-bound != none {
       in-bound-cell(x-itvl-left(0), 0pt, header-height, [*#left-bound*])
@@ -603,14 +646,15 @@
       )
     }
 
-    // Variation row
-    if variation {
-      let y-double-line = header-height + num-rows * row-height
+    // One variation row: its arrows, their values, the poles that break them
+    // and the two rules that close it. Called for the f block, and again for
+    // the second block when that one is a variation rather than a convexity row.
+    let variation-row(y-double-line, sign-at, row-label, zvals, sval, eval-) = {
       let y-top = y-double-line + double-line-gap
       let y-bottom = y-top + var-row-height
       let y-center = (y-top + y-bottom) / 2
 
-      for (i-a, i-b) in hd-runs(get-summary-sign-in-interval) {
+      for (i-a, i-b) in hd-runs(sign-at) {
         hd-band(i-a, i-b, y-top, var-row-height)
       }
 
@@ -618,9 +662,9 @@
         line(start: (0pt, 0pt), end: (total-width, 0pt), stroke: 0.5pt)
       )
 
-      if variation-label != none {
+      if row-label != none {
         place(top + left, dx: lbl-w / 2, dy: y-center,
-          box(width: 0pt, height: 0pt, align(center + horizon)[*#variation-label*])
+          box(width: 0pt, height: 0pt, align(center + horizon)[*#row-label*])
         )
       }
 
@@ -629,9 +673,9 @@
       let margin-v = 0.3cm
       let spans = ()
       let span-start = 0
-      let current-sign = get-summary-sign-in-interval(0)
+      let current-sign = sign-at(0)
       for interval-idx in range(1, num-intervals) {
-        let sign = get-summary-sign-in-interval(interval-idx)
+        let sign = sign-at(interval-idx)
         let zero-between = all-zeros.at(interval-idx - 1)
         let pole-here = is-pole(zero-between)
         if sign != current-sign or pole-here {
@@ -672,22 +716,22 @@
         }
         k
       }
-      let start-cx = if start-val != none {
+      let start-cx = if sval != none {
         if first-valid-k != none and spans.at(first-valid-k).start > 0 {
           x-at-zero(spans.at(first-valid-k).start - 1)
         } else {
-          lbl-w + 3pt + start-val.size.width / 2
+          lbl-w + 3pt + sval.size.width / 2
         }
       } else { 0pt }
-      let end-cx = if end-val != none {
+      let end-cx = if eval- != none {
         if last-valid-k != none and spans.at(last-valid-k).end < num-intervals - 1 {
           x-at-zero(spans.at(last-valid-k).end)
         } else {
-          total-width - 3pt - end-val.size.width / 2
+          total-width - 3pt - eval-.size.width / 2
         }
       } else { 0pt }
       let zero-val-at(i, want) = {
-        for v in zero-values {
+        for v in zvals {
           if v.i == i and v.pos == want { return v }
         }
         none
@@ -705,15 +749,15 @@
         let e-box = none
         let want-l = if up { "bottom" } else { "top" }
         if span.start == 0 {
-          if start-val != none and start-val.pos == want-l {
+          if sval != none and sval.pos == want-l {
             sx = start-cx
-            sy = cy-of(want-l, start-val.size.height)
-            s-box = start-val.size
+            sy = cy-of(want-l, sval.size.height)
+            s-box = sval.size
           }
-        } else if k == first-valid-k and start-val != none and start-val.pos == want-l {
+        } else if k == first-valid-k and sval != none and sval.pos == want-l {
           sx = start-cx
-          sy = cy-of(want-l, start-val.size.height)
-          s-box = start-val.size
+          sy = cy-of(want-l, sval.size.height)
+          s-box = sval.size
         } else {
           let v = zero-val-at(span.start - 1, want-l)
           if v != none {
@@ -724,15 +768,15 @@
         }
         let want-r = if up { "top" } else { "bottom" }
         if span.end == num-intervals - 1 {
-          if end-val != none and end-val.pos == want-r {
+          if eval- != none and eval-.pos == want-r {
             ex = end-cx
-            ey = cy-of(want-r, end-val.size.height)
-            e-box = end-val.size
+            ey = cy-of(want-r, eval-.size.height)
+            e-box = eval-.size
           }
-        } else if k == last-valid-k and end-val != none and end-val.pos == want-r {
+        } else if k == last-valid-k and eval- != none and eval-.pos == want-r {
           ex = end-cx
-          ey = cy-of(want-r, end-val.size.height)
-          e-box = end-val.size
+          ey = cy-of(want-r, eval-.size.height)
+          e-box = eval-.size
         } else {
           let v = zero-val-at(span.end, want-r)
           if v != none {
@@ -769,7 +813,7 @@
       }
 
       // Value labels on the variation row
-      for v in zero-values {
+      for v in zvals {
         let cx = x-at-zero(v.i)
         if v.pos == "arrow" {
           let cy = (y-top + y-bottom) / 2
@@ -799,13 +843,13 @@
             dy: cy-of(v.pos, v.size.height) - v.size.height / 2, v.body)
         }
       }
-      if start-val != none {
-        place(top + left, dx: start-cx - start-val.size.width / 2,
-          dy: cy-of(start-val.pos, start-val.size.height) - start-val.size.height / 2, start-val.body)
+      if sval != none {
+        place(top + left, dx: start-cx - sval.size.width / 2,
+          dy: cy-of(sval.pos, sval.size.height) - sval.size.height / 2, sval.body)
       }
-      if end-val != none {
-        place(top + left, dx: end-cx - end-val.size.width / 2,
-          dy: cy-of(end-val.pos, end-val.size.height) - end-val.size.height / 2, end-val.body)
+      if eval- != none {
+        place(top + left, dx: end-cx - eval-.size.width / 2,
+          dy: cy-of(eval-.pos, eval-.size.height) - eval-.size.height / 2, eval-.body)
       }
 
       // Arrowheads drawn last (on top of labels)
@@ -831,6 +875,14 @@
           )
         )
       }
+    }
+
+    // Variation row
+    if variation {
+      variation-row(
+        header-height + num-rows * row-height,
+        get-summary-sign-in-interval, variation-label, zero-values, start-val, end-val,
+      )
     }
 
     // Second derivative block (f'' factors + summary + convexity)
@@ -911,6 +963,16 @@
         let x0 = if facteurs2-strip and r >= 1 and r < second-factors.len() { strip-w } else { 0pt }
         place(top + left, dx: x0, dy: y-second-start + double-line-gap + r * row-height,
           line(start: (0pt, 0pt), end: (total-width - x0, 0pt), stroke: 0.5pt)
+        )
+      }
+
+      // Second variation row: same geometry as the f row, in the slot the
+      // convexity row would occupy.
+      if second-variation {
+        variation-row(
+          y-second-start + double-line-gap + second-block-rows * row-height,
+          get-second-summary-sign-in-interval, second-variation-label,
+          second-zero-values, none, none,
         )
       }
 

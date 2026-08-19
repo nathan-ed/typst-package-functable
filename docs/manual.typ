@@ -1,5 +1,5 @@
 // functable manual
-#import "@preview/functable:0.1.0": sign-table as _sign-table, fun-table
+#import "@preview/functable:0.2.0": sign-table as _sign-table, fun-table
 // All examples render inside a grey #f8f8f8 block — set background once here.
 #let sign-table = _sign-table.with(background: rgb("#f8f8f8"))
 

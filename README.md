@@ -1,6 +1,6 @@
 # functable
 
-[![functable on Typst Universe](https://img.shields.io/badge/Typst_Universe-v._0.1.0-239dad?labelColor=eee)](https://typst.app/universe/package/functable)
+[![functable on Typst Universe](https://img.shields.io/badge/Typst_Universe-v._0.2.0-239dad?labelColor=eee)](https://typst.app/universe/package/functable)
 [![Full package manual as PDF](https://img.shields.io/badge/Manual-pdf-333333?labelColor=eee)](https://github.com/nathan-ed/typst-package-functable/blob/a1715b249f7b987c7dc2080172d0c00ad8702371/docs/manual.pdf)
 [![Distributed under the MIT license](https://img.shields.io/badge/License-MIT-333333?labelColor=eee)](LICENSE)
 
@@ -17,7 +17,7 @@ Supports auto-computed signs and values from Typst functions.
 ## Usage
 
 ```typst
-#import "@preview/functable:0.1.0": sign-table, fun-table
+#import "@preview/functable:0.2.0": sign-table, fun-table
 ```
 
 ### Basic sign + variation table
@@ -212,6 +212,11 @@ For irrational x values or custom display, use dictionary entries:
 | `convexity-label` | content, none | `none` | Label for the convexity row. |
 | `hd-fill` | color | `rgb("#cfe2f3")` | Fill color for HD bands when `hd-style: "fill"`. |
 | `hd-style` | string | `"hatch"` | HD rendering: `"hatch"`, `"fill"`, or `"blank"`. |
+| `zero-line` | string | `"dotted"` | Vertical rule at each zero: `"dotted"`, `"solid"` or `"none"` |
+| `x-label` | content | `$x$` | Label of the x row |
+| `second-variation` | bool | `false` | Second block's bottom row as a variation row instead of a convexity row |
+| `second-variation-label` | content | `none` | Label for that row |
+| `second-variation-values` | array | `()` | Values to overlay on it |
 | `show-facteurs` | bool | `true` | Show rotated "facteur(s)" strip at left. |
 | `background` | color | `white` | Background for label knockout rects. Match your page/container fill. |
 
@@ -273,6 +278,15 @@ draws the asymptote double-bar.
 | `format` | function, none | `number => content` to customise how computed values render. Default: smart integer/decimal. |
 
 ## Changelog
+
+### 0.2.0 - 2026-08-19
+
+#### Changed
+- **The vertical rule at a zero is dotted by default** ([#2](https://github.com/nathan-ed/typst-package-functable/issues/2)). Solid, it read like the double bar of a valeur interdite in a factor row that has no zero at that abscissa, which is misleading. `zero-line: "solid"` restores the previous look, `zero-line: "none"` drops the rule.
+
+#### Added
+- **`x-label`** ([#3](https://github.com/nathan-ed/typst-package-functable/issues/3)): the variable of a sign table, so a table can be in `$t$`, in `$theta$`, or in whatever the problem is written in. `fun-table` already had it.
+- **`second-variation`** ([#3](https://github.com/nathan-ed/typst-package-functable/issues/3)): the second block's bottom row as a variation row (arrows) instead of a convexity row, with `second-variation-label` and `second-variation-values`. Labelling the blocks f''(x), f', f'(x), f then gives the full second-derivative reading in one table: the sign of f'' gives the variations of f', whose sign gives the variations of f.
 
 ### [0.1.0] - 2026-07-14
 
