@@ -52,6 +52,10 @@
 /// - variation-label (content, none): Label for the variation row.
 /// - variation-values (array): Function values to overlay on the variation row.
 ///   Each entry: `(at: <approx>, label: <content>, pos: "top"|"bottom"|"arrow"|"auto")`.
+///   At a valeur interdite, give the one-sided limits instead of (or with) `label`:
+///   `(at: 2, left: $-oo$, right: $+oo$)` writes the limit as x -> 2^- against the
+///   left of the double bar and the one as x -> 2^+ against its right. Each takes
+///   `left-pos` / `right-pos` ("top", "bottom" or "auto": from the sign on its side).
 /// - bounds (auto, none, dictionary): Domain bound labels in the x header.
 ///   `auto` renders $-oo$ and $+oo$; `none` hides both; a dictionary
 ///   `(left: ..., right: ...)` uses custom labels.
@@ -349,9 +353,9 @@
   let x-itvl-right(i)  = x-bound-left + (i + 1) * col-width
 
   // Resolve variation values and auto-position them.
-  let auto-interior-pos(k) = {
-    let l = get-summary-sign-in-interval(k)
-    let r = get-summary-sign-in-interval(k + 1)
+  let auto-interior-pos(k, sign-at) = {
+    let l = sign-at(k)
+    let r = sign-at(k + 1)
     let is-sign(s) = s == "+" or s == "-"
     if is-sign(l) and is-sign(r) {
       if l == "+" and r == "-" { "top" }
@@ -363,28 +367,44 @@
       if l == "+" { "top" } else { "bottom" }
     } else { "bottom" }
   }
-  let zero-values = ()
-  for (i, zero) in all-zeros.enumerate() {
-    for v in variation-values {
-      if calc.abs(zero.approx - v.at) < 1e-6 {
-        let pos = v.at("pos", default: "auto")
-        if pos == "auto" { pos = auto-interior-pos(i) }
-        let b = value-box(v.label)
-        zero-values.push((i: i, pos: pos, body: b, size: measure(b)))
+  // A value at a pole can be split into its two one-sided limits: `left`
+  // (x -> a^-) and `right` (x -> a^+), set against either side of the double
+  // bar. Each sits where the arrow on its side ends or starts.
+  let side-auto-pos(sign, side) = {
+    if sign == "+" { if side == "left" { "top" } else { "bottom" } }
+    else if sign == "-" { if side == "left" { "bottom" } else { "top" } }
+    else { "bottom" }
+  }
+  let resolve-values(values, sign-at) = {
+    let out = ()
+    for (i, zero) in all-zeros.enumerate() {
+      for v in values {
+        if calc.abs(zero.approx - v.at) < 1e-6 {
+          if "label" in v {
+            let pos = v.at("pos", default: "auto")
+            if pos == "auto" { pos = auto-interior-pos(i, sign-at) }
+            let b = value-box(v.label)
+            out.push((i: i, side: none, pos: pos, body: b, size: measure(b)))
+          }
+          for (side, k) in (("left", i), ("right", i + 1)) {
+            if side in v {
+              assert(is-pole(zero),
+                message: "functable: `" + side + "` (one-sided limit) needs a pole at " + repr(v.at))
+              let pos = v.at(side + "-pos", default: "auto")
+              assert(pos in ("auto", "top", "bottom"),
+                message: "functable: `" + side + "-pos` must be \"auto\", \"top\" or \"bottom\"")
+              if pos == "auto" { pos = side-auto-pos(sign-at(k), side) }
+              let b = value-box(v.at(side))
+              out.push((i: i, side: side, pos: pos, body: b, size: measure(b)))
+            }
+          }
+        }
       }
     }
+    out
   }
-  let second-zero-values = ()
-  for (i, zero) in all-zeros.enumerate() {
-    for v in second-variation-values {
-      if calc.abs(zero.approx - v.at) < 1e-6 {
-        let pos = v.at("pos", default: "auto")
-        if pos == "auto" { pos = auto-interior-pos(i) }
-        let b = value-box(v.label)
-        second-zero-values.push((i: i, pos: pos, body: b, size: measure(b)))
-      }
-    }
-  }
+  let zero-values = resolve-values(variation-values, get-summary-sign-in-interval)
+  let second-zero-values = resolve-values(second-variation-values, get-second-summary-sign-in-interval)
 
   let start-val = if start-value != none {
     let pos = if start-pos == "auto" {
@@ -688,7 +708,8 @@
 
       for (i, zero) in all-zeros.enumerate() {
         if is-pole(zero) {
-          in-zero-cell(i, y-top, var-row-height, pole-bar(var-row-height - 4pt))
+          // Mask only: the bar itself is drawn after the labels, below.
+          in-zero-cell(i, y-top, var-row-height, hide(pole-bar(var-row-height - 4pt)))
         }
       }
 
@@ -730,9 +751,20 @@
           total-width - 3pt - eval-.size.width / 2
         }
       } else { 0pt }
-      let zero-val-at(i, want) = {
+      // A one-sided limit hugs its side of the pole's double bar (3pt half-width).
+      let val-cx(v) = {
+        let off = 3pt + 2pt + v.size.width / 2
+        if v.side == "left" { x-at-zero(v.i) - off }
+        else if v.side == "right" { x-at-zero(v.i) + off }
+        else { x-at-zero(v.i) }
+      }
+      // `side` is the side of zero i the arrow lies on; a centred value serves both.
+      let zero-val-at(i, want, side) = {
         for v in zvals {
-          if v.i == i and v.pos == want { return v }
+          if v.i == i and v.pos == want and v.side == side { return v }
+        }
+        for v in zvals {
+          if v.i == i and v.pos == want and v.side == none { return v }
         }
         none
       }
@@ -759,9 +791,9 @@
           sy = cy-of(want-l, sval.size.height)
           s-box = sval.size
         } else {
-          let v = zero-val-at(span.start - 1, want-l)
+          let v = zero-val-at(span.start - 1, want-l, "right")
           if v != none {
-            sx = x-at-zero(span.start - 1)
+            sx = val-cx(v)
             sy = cy-of(want-l, v.size.height)
             s-box = v.size
           }
@@ -778,9 +810,9 @@
           ey = cy-of(want-r, eval-.size.height)
           e-box = eval-.size
         } else {
-          let v = zero-val-at(span.end, want-r)
+          let v = zero-val-at(span.end, want-r, "left")
           if v != none {
-            ex = x-at-zero(span.end)
+            ex = val-cx(v)
             ey = cy-of(want-r, v.size.height)
             e-box = v.size
           }
@@ -814,8 +846,11 @@
 
       // Value labels on the variation row
       for v in zvals {
-        let cx = x-at-zero(v.i)
-        if v.pos == "arrow" {
+        let cx = val-cx(v)
+        if v.side != none {
+          place(top + left, dx: cx - v.size.width / 2,
+            dy: cy-of(v.pos, v.size.height) - v.size.height / 2, v.body)
+        } else if v.pos == "arrow" {
           let cy = (y-top + y-bottom) / 2
           for (k, span) in spans.enumerate() {
             if span.sign != "+" and span.sign != "-" { continue }
@@ -850,6 +885,14 @@
       if eval- != none {
         place(top + left, dx: end-cx - eval-.size.width / 2,
           dy: cy-of(eval-.pos, eval-.size.height) - eval-.size.height / 2, eval-.body)
+      }
+      // Double bars go over the labels: in a narrow column a one-sided limit's
+      // background can reach the next pole and would cut its bar.
+      for (i, zero) in all-zeros.enumerate() {
+        if is-pole(zero) {
+          let h = var-row-height - 4pt
+          place(top + left, dx: x-at-zero(i) - 3pt, dy: y-top + 2pt, pole-bar(h))
+        }
       }
 
       // Arrowheads drawn last (on top of labels)

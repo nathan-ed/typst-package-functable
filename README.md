@@ -1,6 +1,6 @@
 # functable
 
-[![functable on Typst Universe](https://img.shields.io/badge/Typst_Universe-v._0.2.0-239dad?labelColor=eee)](https://typst.app/universe/package/functable)
+[![functable on Typst Universe](https://img.shields.io/badge/Typst_Universe-v._0.2.1-239dad?labelColor=eee)](https://typst.app/universe/package/functable)
 [![Full package manual as PDF](https://img.shields.io/badge/Manual-pdf-333333?labelColor=eee)](https://github.com/nathan-ed/typst-package-functable/blob/9750f50f812095e26183e5052748ab3a4e8625c8/docs/manual.pdf)
 [![Distributed under the MIT license](https://img.shields.io/badge/License-MIT-333333?labelColor=eee)](LICENSE)
 
@@ -17,7 +17,7 @@ Supports auto-computed signs and values from Typst functions.
 ## Usage
 
 ```typst
-#import "@preview/functable:0.2.0": sign-table, fun-table
+#import "@preview/functable:0.2.1": sign-table, fun-table
 ```
 
 ### Basic sign + variation table
@@ -147,6 +147,28 @@ Mark a zero as `pole: true` to draw a double bar (‖) and break the variation a
 )
 ```
 
+Give a pole's value as `left` / `right` instead of `label` to write the one-sided limits
+(x → a⁻ and x → a⁺) against either side of the double bar. Each one goes top or bottom from
+the sign on its side; `left-pos` / `right-pos` override that:
+
+```typst
+#sign-table(
+  factors: (
+    (expr: $x$, zeros: (0,), signs: ("-", "+")),
+    (expr: $x - 3$, zeros: (3,), signs: ("-", "+"), interdit: true),
+  ),
+  summary-label: $f'(x)$,
+  variation: true,
+  variation-label: $f(x)$,
+  start-value: $-oo$,
+  end-value: $+oo$,
+  variation-values: (
+    (at: 0, label: $3 ln 3$),
+    (at: 3, left: $-oo$, right: $-oo$),
+  ),
+)
+```
+
 ### Value table (explicit)
 
 ```typst
@@ -196,7 +218,7 @@ For irrational x values or custom display, use dictionary entries:
 | `summary-label` | content, none | `none` | Label for the f' summary row. |
 | `variation` | bool | `false` | Show variation row with diagonal arrows. |
 | `variation-label` | content, none | `none` | Label for the variation row. |
-| `variation-values` | array | `()` | Values on the variation row: `(at, label, pos)`. |
+| `variation-values` | array | `()` | Values on the variation row: `(at, label, pos)`. At a pole, `left` / `right` (with `left-pos` / `right-pos`) give the one-sided limits. |
 | `bounds` | auto, none, dict | `auto` | Domain bounds in x header. `auto` → $-∞$/$+∞$. |
 | `start-value` | content, none | `none` | Function value at left edge of variation row. |
 | `start-pos` | string | `"auto"` | `"top"`, `"bottom"`, or `"auto"`. |
@@ -278,6 +300,14 @@ draws the asymptote double-bar.
 | `format` | function, none | `number => content` to customise how computed values render. Default: smart integer/decimal. |
 
 ## Changelog
+
+### 0.2.1 - 2026-10-06
+
+#### Added
+- **One-sided limits at a valeur interdite** ([#4](https://github.com/nathan-ed/typst-package-functable/issues/4)): `variation-values: ((at: 2, left: $-oo$, right: $+oo$),)` writes the limits as x → 2⁻ and x → 2⁺ on either side of the double bar, and the arrows on each side run to them. Positions come from the sign on each side; `left-pos` / `right-pos` override them.
+
+#### Fixed
+- **`second-variation-values` with `pos: "auto"`** took their top/bottom position from the f' signs instead of the f'' signs of the second block, so a label could sit on the wrong side of its arrow.
 
 ### 0.2.0 - 2026-08-19
 

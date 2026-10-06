@@ -1,5 +1,5 @@
 // Gallery: fun-table — value table with auto-computed values
-#import "@preview/functable:0.2.0": fun-table
+#import "@preview/functable:0.2.1": fun-table
 
 #set page(width: 14cm, height: auto, margin: 0.8cm)
 #set text(size: 10pt)

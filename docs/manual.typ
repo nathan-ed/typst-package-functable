@@ -1,5 +1,5 @@
 // functable manual
-#import "@preview/functable:0.2.0": sign-table as _sign-table, fun-table
+#import "@preview/functable:0.2.1": sign-table as _sign-table, fun-table
 // All examples render inside a grey #f8f8f8 block — set background once here.
 #let sign-table = _sign-table.with(background: rgb("#f8f8f8"))
 
@@ -93,7 +93,7 @@ block for f'' with a *convexity row*.
   [`summary-label`], [`content`, `none`], [`none`], [Label for the f' summary row.],
   [`variation`], [`bool`], [`false`], [Show variation row with diagonal arrows.],
   [`variation-label`], [`content`, `none`], [`none`], [Label for the variation row.],
-  [`variation-values`], [`array`], [`()`], [Values on the variation row: `(at, label, pos)`.],
+  [`variation-values`], [`array`], [`()`], [Values on the variation row: `(at, label, pos)`. At a pole, `left` / `right` (with `left-pos` / `right-pos`) give the one-sided limits.],
   [`bounds`], [`auto`, `none`, `dict`], [`auto`], [Domain bounds in x header. `auto` → $-∞$/$+∞$. `none` hides both. Dict: `(left: ..., right: ...)`.],
   [`start-value`], [`content`, `none`], [`none`], [Function value at the left edge of the variation row.],
   [`start-pos`], [`string`], [`"auto"`], [`"top"`, `"bottom"`, or `"auto"`.],
@@ -319,6 +319,45 @@ a factor when all its zeros are forbidden values of f:
   summary-label: $f(x)$,
   variation: true,
   variation-label: $f(x)$,
+)
+]
+
+Give a pole's value as `left` / `right` instead of `label` to write the one-sided limits
+(x → a⁻ and x → a⁺) against either side of the double bar. Each one goes top or bottom from
+the sign on its side; `left-pos` / `right-pos` override that:
+
+#example[
+```typst
+#sign-table(
+  factors: (
+    (expr: $x$, zeros: (0,), signs: ("-", "+")),
+    (expr: $x - 3$, zeros: (3,), signs: ("-", "+"), interdit: true),
+  ),
+  summary-label: $f'(x)$,
+  variation: true,
+  variation-label: $f(x)$,
+  start-value: $-oo$,
+  end-value: $+oo$,
+  variation-values: (
+    (at: 0, label: $3 ln 3$),
+    (at: 3, left: $-oo$, right: $-oo$),
+  ),
+)
+```
+#sign-table(
+  factors: (
+    (expr: $x$, zeros: (0,), signs: ("-", "+")),
+    (expr: $x - 3$, zeros: (3,), signs: ("-", "+"), interdit: true),
+  ),
+  summary-label: $f'(x)$,
+  variation: true,
+  variation-label: $f(x)$,
+  start-value: $-oo$,
+  end-value: $+oo$,
+  variation-values: (
+    (at: 0, label: $3 ln 3$),
+    (at: 3, left: $-oo$, right: $-oo$),
+  ),
 )
 ]
 
