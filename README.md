@@ -1,7 +1,7 @@
 # functable
 
 [![functable on Typst Universe](https://img.shields.io/badge/Typst_Universe-v._0.2.1-239dad?labelColor=eee)](https://typst.app/universe/package/functable)
-[![Full package manual as PDF](https://img.shields.io/badge/Manual-pdf-333333?labelColor=eee)](https://github.com/nathan-ed/typst-package-functable/blob/9750f50f812095e26183e5052748ab3a4e8625c8/docs/manual.pdf)
+[![Full package manual as PDF](https://img.shields.io/badge/Manual-pdf-333333?labelColor=eee)](https://github.com/nathan-ed/typst-package-functable/blob/63ab27b45e20f2b5dc0470a8ac0268a50667a4c4/docs/manual.pdf)
 [![Distributed under the MIT license](https://img.shields.io/badge/License-MIT-333333?labelColor=eee)](LICENSE)
 
 Sign, variation and convexity tables in the French tkz-tab style, plus value tables (tableaux de valeurs).
